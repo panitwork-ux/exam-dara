@@ -1346,7 +1346,7 @@ function ProfileScreen({ onBack, user, onAdminOpen, toast }) {
 }
 
 // ADMIN
-function AdminScreen({ onBack, toast, schoolLogo, setSchoolLogo, schoolName, setSchoolName }) {
+function AdminScreen({ onBack, toast, schoolLogo, setSchoolLogo, schoolName, setSchoolName, onClearStudents, onClearExams, onResetAll }) {
   const [logoUrl, setLogoUrl] = useState(schoolLogo);
   const [nameVal, setNameVal] = useState(schoolName);
   const [previewUrl, setPreviewUrl] = useState(schoolLogo);
@@ -1429,9 +1429,46 @@ function AdminScreen({ onBack, toast, schoolLogo, setSchoolLogo, schoolName, set
             <div className="row-body"><div className="row-title">Backup ข้อมูล</div><div className="row-sub">บันทึกสำรองใน Drive</div></div>
             <span className="chev">›</span>
           </div>
-          <div className="row card" onClick={() => toast("🗑️ ล้าง Cache แล้ว!")}>
-            <div className="row-ico" style={{background:"var(--warn-bg)"}}>🗑️</div>
-            <div className="row-body"><div className="row-title">ล้าง Cache</div></div>
+        </div>
+
+        <div className="sec-lbl">ล้างข้อมูล</div>
+        <div className="group">
+          <div className="row card" onClick={() => {
+            if (window.confirm("⚠️ ล้างรายชื่อนักเรียนทั้งหมด?\nไม่สามารถกู้คืนได้")) {
+              onClearStudents(); toast("🗑️ ล้างรายชื่อนักเรียนแล้ว");
+            }
+          }}>
+            <div className="row-ico" style={{background:"var(--warn-bg)"}}>👥</div>
+            <div className="row-body">
+              <div className="row-title" style={{color:"var(--warn)"}}>ล้างรายชื่อนักเรียน</div>
+              <div className="row-sub">ลบนักเรียนทั้งหมดออกจากระบบ</div>
+            </div>
+            <span className="chev">›</span>
+          </div>
+          <div className="row card" onClick={() => {
+            if (window.confirm("⚠️ ล้างชุดข้อสอบทั้งหมด?\nไม่สามารถกู้คืนได้")) {
+              onClearExams(); toast("🗑️ ล้างชุดข้อสอบแล้ว");
+            }
+          }}>
+            <div className="row-ico" style={{background:"var(--warn-bg)"}}>📋</div>
+            <div className="row-body">
+              <div className="row-title" style={{color:"var(--warn)"}}>ล้างชุดข้อสอบ</div>
+              <div className="row-sub">ลบข้อสอบและเฉลยทั้งหมด</div>
+            </div>
+            <span className="chev">›</span>
+          </div>
+          <div className="row card" onClick={() => {
+            if (window.confirm("🚨 Reset ระบบทั้งหมด?\nล้างนักเรียน ข้อสอบ Queue และการตั้งค่าทั้งหมด\nไม่สามารถกู้คืนได้!")) {
+              onResetAll();
+              localStorage.clear();
+              toast("🔄 Reset ระบบทั้งหมดแล้ว");
+            }
+          }}>
+            <div className="row-ico" style={{background:"var(--bad-bg)"}}>🔄</div>
+            <div className="row-body">
+              <div className="row-title" style={{color:"var(--bad)"}}>Reset ระบบทั้งหมด</div>
+              <div className="row-sub">ล้างข้อมูลทุกอย่าง — ไม่สามารถกู้คืนได้</div>
+            </div>
             <span className="chev">›</span>
           </div>
         </div>
@@ -1506,6 +1543,12 @@ export default function App() {
   const [adminPin, setAdminPin] = useState("");
   const [adminPinErr, setAdminPinErr] = useState(false);
   const [schoolLogo, setSchoolLogo] = useState(localStorage.getItem("schoolLogo")||"");
+  const [students, setStudents] = useState(STUDENTS);
+  const [exams, setExams] = useState([
+    {id:"e1",name:"คณิตศาสตร์ ม.3 ปลายภาค",room:"ม.3/1",questions:30,done:40,total:40,avg:73.4,status:"done"},
+    {id:"e2",name:"วิทยาศาสตร์ ม.2",room:"ม.3/2",questions:40,done:28,total:38,avg:70,status:"inprogress"},
+    {id:"e3",name:"ภาษาไทย ม.1",room:"ม.1/3",questions:50,done:0,total:42,avg:0,status:"waiting"},
+  ]);
   const [schoolName, setSchoolName] = useState(localStorage.getItem("schoolName")||"โรงเรียนดาราวิทยาลัย");
 
   const { msg: toastMsg, show: toastShow, toast } = useToast();
@@ -1582,7 +1625,16 @@ export default function App() {
                 onAdminOpen={() => setShowAdminLogin(true)} toast={toast}/>,
     admin:    <AdminScreen onBack={() => goBack("home")} toast={toast}
                 schoolLogo={schoolLogo} setSchoolLogo={setSchoolLogo}
-                schoolName={schoolName} setSchoolName={setSchoolName}/>,
+                schoolName={schoolName} setSchoolName={setSchoolName}
+                onClearStudents={() => setStudents([])}
+                onClearExams={() => setExams([])}
+                onResetAll={() => {
+                  setStudents([]);
+                  setExams([]);
+                  setQueue([]);
+                  setSchoolLogo("");
+                  setSchoolName("โรงเรียนดาราวิทยาลัย");
+                }}/>,
     queue:    <QueueScreen onBack={() => goBack("home")} queue={queue} setQueue={setQueue} toast={toast}/>,
     exams:    <ExamsScreen onBack={() => goBack("home")} toast={toast}/>,
   };
