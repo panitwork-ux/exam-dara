@@ -359,15 +359,7 @@ style.textContent = CSS;
 document.head.appendChild(style);
 
 // ─── Data ──────────────────────────────────────────────────────────────────
-const STUDENTS = [
-  { id:"66001", name:"นายสมชาย ใจดี",         room:"ม.3/1", no:1, score:86 },
-  { id:"66002", name:"น.ส.วิภา สวยงาม",       room:"ม.3/1", no:2, score:93 },
-  { id:"66003", name:"ด.ช.ปิยะ มีสุข",        room:"ม.3/1", no:3, score:54 },
-  { id:"66004", name:"น.ส.กนกวรรณ ดีมาก",     room:"ม.3/1", no:4, score:78 },
-  { id:"66005", name:"นายอนันต์ รักเรียน",     room:"ม.3/1", no:5, score:70 },
-  { id:"66006", name:"น.ส.สุภาพร แสนดี",      room:"ม.3/2", no:1, score:88 },
-  { id:"66007", name:"ด.ช.ภานุพงศ์ เก่งมาก",  room:"ม.3/2", no:2, score:62 },
-];
+const STUDENTS = [];
 const COLORS = ["#C8102E","#EC4899","#F59E0B","#10B981","#8B5CF6","#0A84FF","#FF6B00","#06B6D4"];
 const ITEM_DATA = [85,70,90,45,80,60,75,88,35,92,65,78,55,82,70,45,88,76,60,92,80,70,65,85,50,78,90,62,88,75];
 
@@ -493,7 +485,7 @@ function LoginScreen({ onLogin, onAdmin }) {
 }
 
 // HOME
-function HomeScreen({ setScreen, setTab, queue, user }) {
+function HomeScreen({ setScreen, setTab, queue, user, exams=[], students=[] }) {
   return (
     <>
       {/* Top curved header */}
@@ -521,7 +513,7 @@ function HomeScreen({ setScreen, setTab, queue, user }) {
           </div>
         </div>
         <div className="stats-row" style={{paddingTop:16}}>
-          {[["248","👥 นักเรียน"],["12","📋 ข้อสอบ"],["1,840","✅ ตรวจแล้ว"],["73%","📊 เฉลี่ย"]].map(([n,l],i)=>(
+          {[[`${students.length}`,"👥 นักเรียน"],[`${exams.length}`,"📋 ข้อสอบ"],[`${exams.reduce((a,e)=>a+e.done,0)}`,"✅ ตรวจแล้ว"],["—","📊 เฉลี่ย"]].map(([n,l],i)=>(
             <div key={i} className="stat-box">
               <div className="stat-num" style={i===3?{color:"var(--ok)"}:{}}>{n}</div>
               <div className="stat-lbl">{l}</div>
@@ -575,20 +567,25 @@ function HomeScreen({ setScreen, setTab, queue, user }) {
         {/* Recent exams */}
         <div className="sec-lbl">ข้อสอบล่าสุด</div>
         <div className="group">
-          {[
-            ["🧮","คณิตศาสตร์ ม.3 ปลายภาค","ม.3/1 • 30 ข้อ",<span className="pill pill-green">✅ เสร็จ</span>],
-            ["🔬","วิทยาศาสตร์ ม.2","ม.2/2 • 40 ข้อ • กำลังตรวจ",<span className="pill pill-warn">🔄 ตรวจ</span>],
-            ["📚","ภาษาไทย ม.1","ม.1/3 • 50 ข้อ • รอตรวจ",<span className="pill pill-gray">⏳ รอ</span>],
-          ].map(([ico,name,sub,badge],i) => (
-            <div key={i} className="row card" onClick={() => { setScreen("report"); setTab("report"); }}>
-              <div className="row-ico" style={{background:["var(--red-l)","var(--info-bg)","var(--warn-bg)"][i]}}>{ico}</div>
-              <div className="row-body">
-                <div className="row-title">{name}</div>
-                <div className="row-sub">{sub}</div>
-              </div>
-              <div className="row-right">{badge}<span className="chev">›</span></div>
+          {exams.length === 0 ? (
+          <div style={{padding:"24px 20px",textAlign:"center",color:"var(--t3)"}}>
+            <div style={{fontSize:36,marginBottom:8}}>📋</div>
+            <div style={{fontSize:14,fontWeight:600}}>ยังไม่มีชุดข้อสอบ</div>
+            <div style={{fontSize:12,marginTop:4}}>กด "ออกแบบกระดาษ" เพื่อสร้างชุดแรก</div>
+          </div>
+        ) : exams.slice(0,3).map((e,i) => (
+          <div key={e.id} className="row card" onClick={() => { setScreen("report"); setTab("report"); }}>
+            <div className="row-ico" style={{background:["var(--red-l)","var(--info-bg)","var(--warn-bg)"][i%3]}}> 📋</div>
+            <div className="row-body">
+              <div className="row-title">{e.name}</div>
+              <div className="row-sub">{e.room} • {e.questions} ข้อ</div>
             </div>
-          ))}
+            <div className="row-right">
+              <span className="pill pill-green">✅</span>
+              <span className="chev">›</span>
+            </div>
+          </div>
+        ))}
         </div>
         <div style={{height:8}}/>
       </div>
@@ -1270,7 +1267,7 @@ function ReportScreen({ onBack, toast }) {
 }
 
 // PROFILE
-function ProfileScreen({ onBack, user, onAdminOpen, toast }) {
+function ProfileScreen({ onBack, user, onAdminOpen, toast, onLogout }) {
   return (
     <>
       <div style={{position:"relative"}}>
@@ -1338,7 +1335,9 @@ function ProfileScreen({ onBack, user, onAdminOpen, toast }) {
         </div>
 
         <div style={{padding:"0 16px 20px"}}>
-          <button className="btn btn-danger" onClick={() => toast("ออกจากระบบ...")}>🚪 ออกจากระบบ</button>
+          <button className="btn btn-danger" onClick={() => {
+            if(window.confirm("ออกจากระบบ?")) onLogout();
+          }}>🚪 ออกจากระบบ</button>
         </div>
       </div>
     </>
@@ -1534,21 +1533,13 @@ export default function App() {
   const [screen, setScreen] = useState("home");
   const [prevScreen, setPrevScreen] = useState(null);
   const [tab, setTab] = useState("home");
-  const [queue, setQueue] = useState([
-    { emoji:"📄", note:"QR Code อ่านไม่ได้ — กระดาษย่น" },
-    { emoji:"📋", note:"ไม่มีชื่อและไม่มี QR" },
-    { emoji:"📃", note:"QR Code ถูกลบออก" },
-  ]);
+  const [queue, setQueue] = useState([]);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPin, setAdminPin] = useState("");
   const [adminPinErr, setAdminPinErr] = useState(false);
   const [schoolLogo, setSchoolLogo] = useState(localStorage.getItem("schoolLogo")||"");
   const [students, setStudents] = useState(STUDENTS);
-  const [exams, setExams] = useState([
-    {id:"e1",name:"คณิตศาสตร์ ม.3 ปลายภาค",room:"ม.3/1",questions:30,done:40,total:40,avg:73.4,status:"done"},
-    {id:"e2",name:"วิทยาศาสตร์ ม.2",room:"ม.3/2",questions:40,done:28,total:38,avg:70,status:"inprogress"},
-    {id:"e3",name:"ภาษาไทย ม.1",room:"ม.1/3",questions:50,done:0,total:42,avg:0,status:"waiting"},
-  ]);
+  const [exams, setExams] = useState([]);
   const [schoolName, setSchoolName] = useState(localStorage.getItem("schoolName")||"โรงเรียนดาราวิทยาลัย");
 
   const { msg: toastMsg, show: toastShow, toast } = useToast();
@@ -1616,13 +1607,14 @@ export default function App() {
   }
 
   const SCREENS = {
-    home:     <HomeScreen setScreen={navigate} setTab={setTab} queue={queue} user={user}/>,
+    home:     <HomeScreen setScreen={navigate} setTab={setTab} queue={queue} user={user} exams={exams} students={students}/>,
     design:   <DesignScreen onBack={() => goBack("home")} toast={toast} schoolLogo={schoolLogo} schoolName={schoolName}/>,
     scan:     <ScanScreen onBack={(t) => goBack(t||"home")} queue={queue} setQueue={setQueue} toast={toast}/>,
     students: <StudentsScreen onBack={() => goBack("home")} toast={toast}/>,
     report:   <ReportScreen onBack={() => goBack("home")} toast={toast}/>,
     profile:  <ProfileScreen onBack={() => goBack("home")} user={user}
-                onAdminOpen={() => setShowAdminLogin(true)} toast={toast}/>,
+                onAdminOpen={() => setShowAdminLogin(true)} toast={toast}
+                onLogout={() => { setLoggedIn(false); setUser(null); setScreen("home"); }}/>,
     admin:    <AdminScreen onBack={() => goBack("home")} toast={toast}
                 schoolLogo={schoolLogo} setSchoolLogo={setSchoolLogo}
                 schoolName={schoolName} setSchoolName={setSchoolName}
